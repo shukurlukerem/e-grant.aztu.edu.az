@@ -7,7 +7,7 @@ from app.core.log import logger
 
 from app.api.endpoints.v1.routes import expertRouter
 from app.api.endpoints.v1.routes.prioritetRouter import router as prioritet_router
-
+from app.api.endpoints.v1.routes.userRouter import router as user_router
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI(
@@ -19,7 +19,7 @@ app = FastAPI(
 
 app.include_router(prioritet_router.router, prefix="/api", tags=["Prioritet"])
 app.include_router(expertRouter.router, prefix= "/api", tags=["Experts"])
-
+app.include_router(user_router, prefix="/api/profile", tags=["Profile"])
 
 @app.get("/test")
 def test():
