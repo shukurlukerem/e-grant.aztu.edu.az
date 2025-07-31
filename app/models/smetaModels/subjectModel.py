@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String
-from app.core.config import Base
+from app.db.database import Base
 
 class SubjectOfPurchase(Base):
     __tablename__ = "subjects_of_purchase"

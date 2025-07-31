@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String
-from app.core.config import Base    
+from app.db.database import Base
+  
 
 class Salary(Base):
     __tablename__ = "salary_smeta"

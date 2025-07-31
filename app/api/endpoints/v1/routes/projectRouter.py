@@ -7,7 +7,7 @@ from app.services.projectService import (
     get_project_by_code, get_project_by_fin_kod,
     update_project, delete_project
 )
-from app.core.config import get_db
+from app.db.session import get_db
 from typing import List
 
 router = APIRouter()

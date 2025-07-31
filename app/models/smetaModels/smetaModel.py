@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String
-from app.core.config import Base
+from app.db.database import Base
 
 class Smeta(Base):
     __tablename__ = "smeta"

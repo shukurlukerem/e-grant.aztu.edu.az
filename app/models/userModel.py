@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, Text, DateTime, LargeBinary
-from app.core.config import Base  
+from app.db.database import Base
 from datetime import datetime
 import base64
 

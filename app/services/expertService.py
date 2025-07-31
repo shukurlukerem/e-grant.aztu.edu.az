@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from app.models.expertModel import Expert
 from app.models.projectModel import Project
-from app.core.config import get_db
+from app.db.database import Base
+from app.db.session import get_db
 from app.api.endpoints.v1.schemas.expertSchema import ExpertCreate
 from app.exceptions.exception import (
     handle_missing_field,

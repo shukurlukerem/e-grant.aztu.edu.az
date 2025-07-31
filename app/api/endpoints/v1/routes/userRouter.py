@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.orm import Session
-from app.core.config import get_db
+from app.db.session import get_db
 from app.api.endpoints.v1.schemas.userSchema import UserProfileUpdate
 from app.services.userService import get_user_by_fin, update_user_profile
 from app.utils.jwt_required import token_required as jwt_required

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from fastapi_limiter.depends import RateLimiter
-from app.core.config import get_db
+from app.db.session import get_db
 from app.api.endpoints.v1.schemas.expertSchema import ExpertCreate
 from app.services.expertService import create_expert, set_expert, get_experts
 

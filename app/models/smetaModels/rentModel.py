@@ -1,6 +1,5 @@
 from sqlalchemy import Column, Integer, String
-from app.core.config import Base
-
+from app.db.database import Base
 class Rent(Base):
     __tablename__ = "rent_table"
 

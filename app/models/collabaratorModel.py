@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean
-from app.core.config import Base  
+from app.db.database import Base
 
 class Collaborator(Base):  
     __tablename__ = "collaborators"

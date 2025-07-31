@@ -30,3 +30,13 @@
 [2025-07-31 12:32:03] [INFO] - fastapi_app_logger - Incoming request: POST http://localhost:8000/api/save/project
 [2025-07-31 12:32:04] [INFO] - fastapi_app_logger - Response status: 200
 [2025-07-31 12:32:18] [INFO] - fastapi_app_logger - Incoming request: GET http://localhost:8000/api/projects
+[2025-07-31 14:23:59] [INFO] - fastapi_app_logger - Incoming request: GET http://localhost:8000/test
+[2025-07-31 14:23:59] [INFO] - fastapi_app_logger - Response status: 200
+[2025-07-31 14:24:00] [INFO] - fastapi_app_logger - Incoming request: GET http://localhost:8000/favicon.ico
+[2025-07-31 14:24:00] [INFO] - fastapi_app_logger - Response status: 404
+[2025-07-31 14:53:15] [INFO] - fastapi_app_logger - Incoming request: POST http://localhost:8000/auth/signin
+[2025-07-31 14:53:16] [INFO] - fastapi_app_logger - Response status: 200
+[2025-07-31 14:54:22] [INFO] - fastapi_app_logger - Incoming request: POST http://localhost:8000/auth/signin
+[2025-07-31 14:54:23] [INFO] - fastapi_app_logger - Response status: 500
+[2025-07-31 14:59:20] [INFO] - fastapi_app_logger - Incoming request: POST http://localhost:8000/auth/signin
+[2025-07-31 14:59:20] [INFO] - fastapi_app_logger - Response status: 500

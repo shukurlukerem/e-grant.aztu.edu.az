@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends
 from sqlalchemy.orm import Session
-from app.core.config import get_db
+from app.db.session import get_db
 from app.api.endpoints.v1.schemas.prioritetSchema import PrioritetCreate
 from app.services.prioritetService import (
     create_prioritet_service,

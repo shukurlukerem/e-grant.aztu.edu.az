@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime
-from app.core.config import Base
+from app.db.database import Base
 
 class Prioritet(Base):
     __tablename__ = "prioritets"
