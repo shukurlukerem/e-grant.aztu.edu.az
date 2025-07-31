@@ -128,17 +128,38 @@ async def get_all_projects(db: AsyncSession = Depends(get_db)):
         )
 
 async def get_project_by_code(db: AsyncSession, project_code: int):
-    logger.info(f"Fetching project by project code: {project_code}")
-    result = await db.execute(select(Project).filter_by(project_code=project_code))
-    project = result.scalars().first()
-    if not project:
-        logger.warning(f"Project not found for code: {project_code}")
-        return {"success": False, "message": "Project not found with the provided code."}
-    logger.info(f"Project found for code: {project_code}")
-    return {
-        "success": True,
-        "data": project.project_detail()
-    }
+    try:
+        logger.info(f"Fetching project by project code: {project_code}")
+        result = await db.execute(select(Project).filter_by(project_code=project_code))
+        project = result.scalar_one_or_none()
+
+        if not project:
+            logger.warning(f"Project not found for code: {project_code}")
+            return JSONResponse(
+                status_code=404,
+                content={"success": False, "message": "Project not found with the provided code."}
+            )
+
+        logger.info(f"Project found for code: {project_code}")
+
+        # Convert project detail dict to JSON serializable form
+        project_data = jsonable_encoder(project.project_detail())
+
+        return JSONResponse(
+            status_code=200,
+            content={
+                "statusCode": 200,
+                "message": "Project fetched.",
+                "data": project_data
+            }
+        )
+    
+    except Exception as e:
+        logger.error(f"Error fetching projects: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"statusCode": 500, "error": str(e)}
+        )
 
 
 async def get_project_by_fin_kod(db: AsyncSession, fin_kod: str):
@@ -156,6 +177,11 @@ async def get_project_by_fin_kod(db: AsyncSession, fin_kod: str):
     }
 
 
+def make_naive_utc(dt):
+    if dt and dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
 async def update_project(db: AsyncSession, data: ProjectUpdate):
     logger.info(f"Updating project for FIN code: {data.fin_kod}")
     result = await db.execute(select(Project).filter_by(fin_kod=data.fin_kod))
@@ -164,7 +190,13 @@ async def update_project(db: AsyncSession, data: ProjectUpdate):
         logger.warning(f"Project to update not found for FIN code: {data.fin_kod}")
         return {"success": False, "message": "Project not found to update."}
 
-    for field, value in data.dict().items():
+    data_dict = data.dict()
+
+    # Convert datetime fields that may have tzinfo to naive UTC before setting
+    for field, value in data_dict.items():
+        if isinstance(value, datetime):
+            value = make_naive_utc(value)
+
         if hasattr(project, field) and value is not None:
             setattr(project, field, value)
 
