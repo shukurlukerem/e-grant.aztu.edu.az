@@ -7,7 +7,7 @@ class Rent(Base):
     project_code = Column(Integer, nullable=False)
     rent_area = Column(String, nullable=False)
     unit_of_measure = Column(String, nullable=False)
-    unit_of_price = Column(String, nullable=False)
+    unit_price = Column(Integer, nullable=False)
     quantity = Column(Integer, nullable=False)
     duration = Column(Integer, nullable=False)
     total_amount = Column(Integer, nullable=False)
@@ -18,7 +18,7 @@ class Rent(Base):
             'project_code': self.project_code,
             'rent_area': self.rent_area,
             'unit_of_measure': self.unit_of_measure,
-            'unit_of_price': self.unit_of_price,
+            'unit_price': self.unit_price,
             'quantity': self.quantity,
             'duration': self.duration,
             'total_amount': self.total_amount

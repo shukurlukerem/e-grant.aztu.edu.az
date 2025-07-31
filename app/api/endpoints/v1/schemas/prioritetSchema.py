@@ -4,10 +4,13 @@ from datetime import datetime
 
 class PrioritetBase(BaseModel):
     prioritet_name: str
-    project_code: int
+    prioriet_code: int
 
-class PrioritetCreate(PrioritetBase):
-    pass
+
+class PrioritetCreate(BaseModel):
+    prioritet_name: str
+    prioritet_code: int
+
 
 class PrioritetOut(PrioritetBase):
     id: int

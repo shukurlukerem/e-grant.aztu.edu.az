@@ -1,20 +1,21 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
-from app.db.session import get_db
+from app.db.session import get_db  
 from app.api.endpoints.v1.schemas.prioritetSchema import PrioritetCreate
+from app.utils.jwt_required import token_required
 from app.services.prioritetService import (
     create_prioritet_service,
-    get_prioritet_by_code_service
+    get_prioritet_by_code_service,
 )
 
 router = APIRouter()
 
+
 @router.post("/create-prioritet")
-async def create_prioritet(data: PrioritetCreate):
-    print(data.prioritet_name)
-    return {"message": "Prioritet created", "prioritet_name": data.prioritet_name}
+def create_prioritet(prioritet_data: PrioritetCreate, db: Session = Depends(get_db)):
+    return create_prioritet_service(prioritet_data.dict(), db)
 
 
 @router.get("/{prioritet_code}")
-async def get_prioritet(prioritet_code: str, db: Session = Depends(get_db)):
+def get_prioritet_by_code(prioritet_code: str, db: Session = Depends(get_db)):
     return get_prioritet_by_code_service(prioritet_code, db)

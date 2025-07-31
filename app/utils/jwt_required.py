@@ -7,7 +7,6 @@ def token_required(allowed_roles=None):
     def decorator(f):
         @wraps(f)
         async def decorated_function(*args, **kwargs):
-            # Extract Request instance from kwargs or args
             request: Request = kwargs.get('request')
             if request is None:
                 for arg in args:

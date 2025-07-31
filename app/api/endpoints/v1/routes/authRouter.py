@@ -12,3 +12,10 @@ async def signin_endpoint(
     db: AsyncSession = Depends(get_db)
 ):
     return await signin(signin_details, db)
+
+@router.post("/signup")
+async def signup_endpoint(
+    signup_details: SignUp,
+    db: AsyncSession = Depends(get_db)
+):
+    return await signup(signup_details, db)

@@ -1,9 +1,11 @@
+
 from pydantic import BaseModel
 
 class AuthBase(BaseModel):
     fin_kod: str
-    user_type: str
-    project_role: str
+    email: str
+    user_type: int
+    project_role: int
 
 class SignUp(AuthBase):
     password: str
