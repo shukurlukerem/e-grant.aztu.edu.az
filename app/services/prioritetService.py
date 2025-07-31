@@ -2,9 +2,12 @@ from sqlalchemy.orm import Session
 from app.models.prioritetModel import Prioritet
 from fastapi.responses import JSONResponse
 import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from fastapi import Depends
+from app.db.session import get_db
 
-
-def create_prioritet_service(data: dict, db: Session):
+async def create_prioritet_service(data: dict, db: AsyncSession = Depends(get_db)):
     try:
         prioritet_name = data.get('prioritet_name')
         prioritet_code = data.get('prioritet_code')
@@ -15,7 +18,9 @@ def create_prioritet_service(data: dict, db: Session):
                 content={"success": False, "message": "Missing field: 'prioritet_name' or 'prioritet_code'"}
             )
 
-        existing = db.query(Prioritet).filter_by(prioritet_code=prioritet_code).first()
+        result = await db.execute(select(Prioritet).where(Prioritet.project_code == dict.prioritet_code))
+        existing = result.scalar_one_or_none()
+
         if existing:
             return JSONResponse(
                 status_code=409,
@@ -53,9 +58,10 @@ def create_prioritet_service(data: dict, db: Session):
         )
 
 
-def get_prioritet_by_code_service(prioritet_code: str, db: Session):
+async def get_prioritet_by_code_service(prioritet_code: str, db: AsyncSession = Depends(get_db)):
     try:
-        prioritet = db.query(Prioritet).filter(Prioritet.prioritet_code == prioritet_code).first()
+        result = await db.execute(select(Prioritet))
+        prioritet = result.scalar_one_or_none()
 
         if not prioritet:
             return JSONResponse(

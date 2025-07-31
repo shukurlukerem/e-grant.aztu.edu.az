@@ -14,6 +14,8 @@ from app.exceptions.exception import (
 )
 from fastapi.templating import Jinja2Templates
 from app.utils.email_util import send_email
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates/email")
@@ -53,7 +55,7 @@ async def create_expert(request: Request, db: Session = Depends(get_db)):
         return handle_global_exception(str(e))
 
 
-async def set_expert(request: Request, db: Session = Depends(get_db)):
+async def set_expert(request: Request, db: AsyncSession = Depends(get_db)):
     try:
         print("[DEBUG] Received request to set expert.")
         data = await request.json()
@@ -67,7 +69,9 @@ async def set_expert(request: Request, db: Session = Depends(get_db)):
             if field not in data:
                 return handle_missing_field(field)
             
-        project = db.query(Project).filter_by(project_code=str(data['project_code'])).first()
+        result = await db.execute(select(Project).where(Project.project_code == Request.project_code))
+        project = result.scalar_one_or_none()
+
         print(f"[DEBUG] Project found: {project}")
 
         if not project or project.submitted is False:
@@ -91,7 +95,8 @@ async def set_expert(request: Request, db: Session = Depends(get_db)):
 async def get_experts(db: Session = Depends(get_db)):
     try:
         print("[DEBUG] Fetching all experts from database...")
-        experts = db.query(Expert).all()
+        result = db.execute(select(Expert))
+        experts = result.scalars().all()
 
         if not experts:
             return handle_specific_not_found("Expert not found.")

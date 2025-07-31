@@ -1,11 +1,20 @@
+import logging
+import random
+from datetime import datetime, timezone
+from fastapi.encoders import jsonable_encoder
+from fastapi import Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+
 from app.models.projectModel import Project
 from app.api.endpoints.v1.schemas.projectSchema import ProjectCreate, ProjectUpdate
-from app.utils.jwt_required import token_required
 from app.models.userModel import User
-import random
+from app.db.session import get_db
+
+# Configure logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 async def generate_unique_project_code(db: AsyncSession) -> int:
@@ -13,26 +22,26 @@ async def generate_unique_project_code(db: AsyncSession) -> int:
         code = random.randint(10000000, 99999999)
         result = await db.execute(select(Project).filter_by(project_code=code))
         if not result.scalars().first():
+            logger.info(f"Generated unique project code: {code}")
             return code
 
 
-from datetime import datetime, timezone
-
 async def create_or_update_project(db: AsyncSession, data: ProjectCreate):
+    logger.info(f"Creating or updating project for FIN code: {data.fin_kod}")
 
     result = await db.execute(select(Project).filter_by(fin_kod=data.fin_kod))
     project = result.scalars().first()
 
     if not project:
+        logger.info("No existing project found. Creating new project.")
         project = Project(
             fin_kod=data.fin_kod,
             project_code=await generate_unique_project_code(db),
             submitted=False,
-            submitted_at=datetime.utcnow() 
+            submitted_at=datetime.utcnow()
         )
         db.add(project)
 
-    # Clean tz-aware datetime fields
     data_dict = data.dict()
     if data_dict.get("project_deadline") and data_dict["project_deadline"].tzinfo:
         data_dict["project_deadline"] = data_dict["project_deadline"].astimezone(timezone.utc).replace(tzinfo=None)
@@ -57,6 +66,8 @@ async def create_or_update_project(db: AsyncSession, data: ProjectCreate):
     await db.commit()
     await db.refresh(project)
 
+    logger.info(f"Project successfully created/updated for FIN code: {data.fin_kod}")
+
     return {
         "success": True,
         "data": project.project_detail(),
@@ -64,47 +75,66 @@ async def create_or_update_project(db: AsyncSession, data: ProjectCreate):
     }
 
 
+async def get_all_projects(db: AsyncSession = Depends(get_db)):
+    logger.info("Fetching all projects.")
+    try:
+        result = await db.execute(select(Project))
+        projects = result.scalars().all()
 
-async def get_all_projects(db: AsyncSession):
-    result = await db.execute(select(Project))
-    projects = result.scalars().all()
+        if not projects:
+            logger.warning("No projects found in the database.")
+            return JSONResponse(
+                status_code=204,
+                content={"statusCode": 204, "message": "No projects found."}
+            )
 
-    if not projects:
-        return JSONResponse(content={
-            "statusCode": 204,
-            "message": "No projects found."
-        })
+        project_data = []
 
-    project_data = []
+        for p in projects:
+            user_result = await db.execute(
+                select(User.name, User.surname).where(User.fin_kod == p.fin_kod)
+            )
+            user = user_result.scalar_one_or_none()
 
-    for p in projects:
-        user_result = await db.execute(
-            select(User.name, User.surname).where(User.fin_kod == p.fin_kod)
+            project_detail = p.project_detail()
+
+            # jsonable_encoder converts datetime and other types safely
+            project_detail = jsonable_encoder(project_detail)
+
+            project_data.append({
+                **project_detail,
+                "user": {
+                    "name": user.name if user else None,
+                    "surname": user.surname if user else None
+                }
+            })
+
+        logger.info(f"{len(project_data)} projects fetched successfully.")
+
+        return JSONResponse(
+            status_code=200,
+            content=jsonable_encoder({
+                "statusCode": 200,
+                "message": "Projects fetched successfully.",
+                "data": project_data
+            })
         )
-        user = user_result.first()
 
-        project_data.append({
-            **p.project_detail(),
-            "user": {
-                "name": user.name if user else None,
-                "surname": user.surname if user else None
-            }
-        })
-
-    return JSONResponse(
-        content={
-            "statusCode": 200,
-            "message": "Project fetched successfully.",
-            "data": project_data
-        }
-    )
-
+    except Exception as e:
+        logger.error(f"Error fetching projects: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"statusCode": 500, "error": str(e)}
+        )
 
 async def get_project_by_code(db: AsyncSession, project_code: int):
+    logger.info(f"Fetching project by project code: {project_code}")
     result = await db.execute(select(Project).filter_by(project_code=project_code))
     project = result.scalars().first()
     if not project:
+        logger.warning(f"Project not found for code: {project_code}")
         return {"success": False, "message": "Project not found with the provided code."}
+    logger.info(f"Project found for code: {project_code}")
     return {
         "success": True,
         "data": project.project_detail()
@@ -112,10 +142,13 @@ async def get_project_by_code(db: AsyncSession, project_code: int):
 
 
 async def get_project_by_fin_kod(db: AsyncSession, fin_kod: str):
+    logger.info(f"Fetching project by FIN code: {fin_kod}")
     result = await db.execute(select(Project).filter_by(fin_kod=fin_kod))
     project = result.scalars().first()
     if not project:
+        logger.warning(f"Project not found for FIN code: {fin_kod}")
         return {"success": False, "message": "Project not found with the provided financial code."}
+    logger.info(f"Project found for FIN code: {fin_kod}")
     return {
         "success": True,
         "data": project.project_detail(),
@@ -124,9 +157,11 @@ async def get_project_by_fin_kod(db: AsyncSession, fin_kod: str):
 
 
 async def update_project(db: AsyncSession, data: ProjectUpdate):
+    logger.info(f"Updating project for FIN code: {data.fin_kod}")
     result = await db.execute(select(Project).filter_by(fin_kod=data.fin_kod))
     project = result.scalars().first()
     if not project:
+        logger.warning(f"Project to update not found for FIN code: {data.fin_kod}")
         return {"success": False, "message": "Project not found to update."}
 
     for field, value in data.dict().items():
@@ -136,6 +171,7 @@ async def update_project(db: AsyncSession, data: ProjectUpdate):
     await db.commit()
     await db.refresh(project)
 
+    logger.info(f"Project successfully updated for FIN code: {data.fin_kod}")
     return {
         "success": True,
         "data": project.project_detail(),
@@ -144,14 +180,17 @@ async def update_project(db: AsyncSession, data: ProjectUpdate):
 
 
 async def delete_project(db: AsyncSession, fin_kod: str):
+    logger.info(f"Deleting project for FIN code: {fin_kod}")
     result = await db.execute(select(Project).filter_by(fin_kod=fin_kod))
     project = result.scalars().first()
     if not project:
+        logger.warning(f"Project to delete not found for FIN code: {fin_kod}")
         return {"success": False, "message": "Project not found to delete."}
 
     await db.delete(project)
     await db.commit()
 
+    logger.info(f"Project successfully deleted for FIN code: {fin_kod}")
     return {
         "success": True,
         "message": "Project deleted successfully"
