@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean
 from app.core.config import Base  
 
 class Collaborator(Base):  
-    __tablename__ = "collaborator"
+    __tablename__ = "collaborators"
 
     id = Column(Integer, primary_key=True, index=True)
     project_code = Column(Integer, nullable=False)
