@@ -1,18 +1,16 @@
-import logging
 import random
-from datetime import datetime, timezone
-from fastapi.encoders import jsonable_encoder
-from fastapi import Depends
-from fastapi.responses import JSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-
-from app.models.projectModel import Project
-from app.api.endpoints.v1.schemas.projectSchema import ProjectCreate, ProjectUpdate
-from app.models.userModel import User
+import logging
 from app.db.session import get_db
+from fastapi import Depends, status
+from sqlalchemy.future import select
+from app.models.userModel import User
+from datetime import datetime, timezone
+from fastapi.responses import JSONResponse
+from app.models.projectModel import Project
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.endpoints.v1.schemas.projectSchema import ProjectCreate, ProjectUpdate
 
-# Configure logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -68,11 +66,14 @@ async def create_or_update_project(db: AsyncSession, data: ProjectCreate):
 
     logger.info(f"Project successfully created/updated for FIN code: {data.fin_kod}")
 
-    return {
-        "success": True,
-        "data": project.project_detail(),
-        "message": "Project created/updated successfully"
-    }
+    return JSONResponse(
+        status_code=200,
+        content=jsonable_encoder({
+            "successCode": 201,
+            "data": project.project_detail(),
+            "message": "Project created/updated successfully"
+        })
+    )
 
 
 async def get_all_projects(db: AsyncSession = Depends(get_db)):
@@ -142,7 +143,6 @@ async def get_project_by_code(db: AsyncSession, project_code: int):
 
         logger.info(f"Project found for code: {project_code}")
 
-        # Convert project detail dict to JSON serializable form
         project_data = jsonable_encoder(project.project_detail())
 
         return JSONResponse(
@@ -161,7 +161,6 @@ async def get_project_by_code(db: AsyncSession, project_code: int):
             content={"statusCode": 500, "error": str(e)}
         )
 
-
 async def get_project_by_fin_kod(db: AsyncSession, fin_kod: str):
     logger.info(f"Fetching project by FIN code: {fin_kod}")
     result = await db.execute(select(Project).filter_by(fin_kod=fin_kod))
@@ -170,6 +169,7 @@ async def get_project_by_fin_kod(db: AsyncSession, fin_kod: str):
         logger.warning(f"Project not found for FIN code: {fin_kod}")
         return {"success": False, "message": "Project not found with the provided financial code."}
     logger.info(f"Project found for FIN code: {fin_kod}")
+
     return {
         "success": True,
         "data": project.project_detail(),
@@ -212,17 +212,25 @@ async def update_project(db: AsyncSession, data: ProjectUpdate):
 
 async def delete_project(db: AsyncSession, fin_kod: str):
     logger.info(f"Deleting project for FIN code: {fin_kod}")
-    result = await db.execute(select(Project).filter_by(fin_kod=fin_kod))
-    project = result.scalars().first()
+    result = await db.execute(
+        select(Project).where(Project.fin_kod == fin_kod)
+    )
+    project = result.scalar_one_or_none()
     if not project:
-        logger.warning(f"Project to delete not found for FIN code: {fin_kod}")
-        return {"success": False, "message": "Project not found to delete."}
+        return JSONResponse(
+            content={
+                "statusCode": 404,
+                "message": "Project not found"
+            }, status_code=status.HTTP_404_NOT_FOUND
+        )
 
     await db.delete(project)
     await db.commit()
 
     logger.info(f"Project successfully deleted for FIN code: {fin_kod}")
-    return {
-        "success": True,
-        "message": "Project deleted successfully"
-    }
+    return JSONResponse(
+            content={
+                "statusCode": 200,
+                "message": "Project deleted"
+            }
+        )

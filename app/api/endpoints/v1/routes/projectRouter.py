@@ -27,7 +27,7 @@ async def fetch_project_by_code(project_code: int, db: AsyncSession = Depends(ge
     return await get_project_by_code(db, project_code)
 
 
-@router.get("/project/fin/{fin_kod}", response_model=ProjectOut)
+@router.get("/project/{fin_kod}", response_model=ProjectOut)
 async def fetch_project_by_fin(fin_kod: str, db: AsyncSession = Depends(get_db)):
     return await get_project_by_fin_kod(db, fin_kod)
 
