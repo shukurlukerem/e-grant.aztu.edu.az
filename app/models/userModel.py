@@ -34,15 +34,32 @@ class User(Base):
     work_email = Column(Text, unique=True)
     profile_completed = Column(Integer, nullable=False)
     born_date = Column(DateTime)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    
+    def get_user_image(self):
+        return {
+            "image": base64.b64encode(self.image).decode('utf-8') if self.image else None
+        }
+    def to_dict(self):
+        def dt_to_str(dt):
+            if dt is None:
+                return None
+            if isinstance(dt, datetime):
+                return dt.isoformat()
+            return str(dt)
+        if self.image and isinstance(self.image, (bytes, bytearray)):
+            image_encoded = base64.b64encode(self.image).decode('utf-8')
+        else:
+            image_encoded = None
 
-    def user_details(self):
         return {
             "id": self.id,
             "name": self.name,
             "surname": self.surname,
             "father_name": self.father_name,
             "fin_kod": self.fin_kod,
-            "image": base64.b64encode(self.image).decode('utf-8') if self.image else None,
+            "image": image_encoded,
             "born_place": self.born_place,
             "living_location": self.living_location,
             "home_phone": self.home_phone,
@@ -57,17 +74,14 @@ class User(Base):
             "main_education": self.main_education,
             "additonal_education": self.additonal_education,
             "scientific_degree": self.scientific_degree,
-            "scientific_date": self.scientific_date,
+            "scientific_date": dt_to_str(self.scientific_date),
             "scientific_name": self.scientific_name,
-            "scientific_name_date": self.scientific_name_date,
+            "scientific_name_date": dt_to_str(self.scientific_name_date),
             "work_location": self.work_location,
             "work_phone": self.work_phone,
             "work_email": self.work_email,
             "profile_completed": self.profile_completed,
-            "born_date": self.born_date
-        }
-
-    def get_user_image(self):
-        return {
-            "image": base64.b64encode(self.image).decode('utf-8') if self.image else None
+            "born_date": dt_to_str(self.born_date),
+            "created_at": dt_to_str(self.created_at),
+            "updated_at": dt_to_str(self.updated_at),
         }

@@ -192,7 +192,6 @@ async def update_project(db: AsyncSession, data: ProjectUpdate):
 
     data_dict = data.dict()
 
-    # Convert datetime fields that may have tzinfo to naive UTC before setting
     for field, value in data_dict.items():
         if isinstance(value, datetime):
             value = make_naive_utc(value)

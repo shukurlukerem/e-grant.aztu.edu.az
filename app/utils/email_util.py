@@ -3,6 +3,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 import os
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+import os
 
 load_dotenv()
 
@@ -29,3 +31,13 @@ def send_email(subject: str, recipient: str, html_content: str, text_content: st
             print(f"[DEBUG] Email sent to {recipient}")
     except Exception as e:
         print(f"[ERROR] Failed to send email to {recipient}: {e}")
+
+templates_dir = os.path.join(os.path.dirname(__file__), '..', 'templates')
+env = Environment(
+    loader=FileSystemLoader(templates_dir),
+    autoescape=select_autoescape(['html', 'xml'])
+)
+
+def render_template(template_name: str, context: dict) -> str:
+    template = env.get_template(template_name)
+    return template.render(context)

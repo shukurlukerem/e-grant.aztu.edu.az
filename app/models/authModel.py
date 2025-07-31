@@ -2,7 +2,8 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
-    Boolean
+    Boolean,
+    DateTime
 )
 from app.db.database import Base
 
@@ -15,4 +16,7 @@ class Auth(Base):
     user_type = Column(Integer, nullable=False)  
     project_role = Column(Integer, nullable=False)
     approved = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime)
+    approved_at = Column(DateTime)
+    # add not null for both created_at
     # 0 = teacher, 1 = phd, 2 = master

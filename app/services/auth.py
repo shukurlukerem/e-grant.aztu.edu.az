@@ -1,10 +1,12 @@
+from datetime import datetime
 from app.db.session import get_db
+from app.utils.email_util import *
 from fastapi import Depends, status
 from sqlalchemy.future import select
 from app.models.authModel import Auth
 from app.models.userModel import User
-from app.models.projectModel import Project
 from fastapi.responses import JSONResponse
+from app.models.projectModel import Project
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.utils.jwt_util import encode_auth_token
 from app.models.collabaratorModel import Collaborator
@@ -21,14 +23,15 @@ async def signup(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        fetched_data = await db.execute(
-            select(Auth)
-            .where(Auth.fin_kod == signup_details.fin_kod)
-        )
+        logger.info(f"Signup attempt for FIN: {signup_details.fin_kod}")
 
+        fetched_data = await db.execute(
+            select(Auth).where(Auth.fin_kod == signup_details.fin_kod)
+        )
         exist_user = fetched_data.scalar_one_or_none()
 
         if exist_user:
+            logger.warning(f"Signup failed - FIN already exists: {signup_details.fin_kod}")
             return JSONResponse(
                 content={
                     "statusCode": 409,
@@ -40,30 +43,69 @@ async def signup(
             fin_kod=signup_details.fin_kod,
             user_type=signup_details.user_type,
             project_role=signup_details.project_role,
-            password_hash=hash_password(signup_details.password),
-            approved=False
+            password_hash= await hash_password(signup_details.password),
+            approved=False,
+            created_at=datetime.utcnow()
         )
 
-        # new_user = User()
+        new_user = User(
+            fin_kod=signup_details.fin_kod,
+            profile_completed=0,
+            created_at=datetime.utcnow(),
+            work_email=signup_details.email,
+            personal_email=signup_details.email
+        )
 
         db.add(new_auth_user)
-        db.commit()
-        db.refresh(new_auth_user)
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_auth_user)
+        await db.refresh(new_user)
+
+        logger.info(f"User successfully registered: {signup_details.fin_kod}")
+
+        subject = "Registration Successful - E-Grant"
+        recipient = signup_details.email
+
+        if signup_details.project_role == 0:
+
+            html_content = render_template("email/owner_registration_template.html", {
+                "fin_kod": signup_details.fin_kod,
+                "project_role": signup_details.project_role,
+                "login_url": "http://e-grant.aztu.edu.az"
+            })
+            logger.info("Rendered email template for project owner")
+
+        else:
+
+            html_content = render_template("email/coll_registration_template.html", {
+                "fin_kod": signup_details.fin_kod,
+                "project_role": signup_details.project_role,
+                "login_url": "http://e-grant.aztu.edu.az"
+            })
+            logger.info("Rendered email template for collaborator")
+
+        send_email(subject, recipient, html_content)
+        logger.info(f"Confirmation email sent to {recipient}")
 
         return JSONResponse(
             content={
                 "statusCode": 201,
                 "message": "User created"
-            }, status_code=status.HTTP_201_CREATED
+            },
+            status_code=status.HTTP_201_CREATED
         )
     
     except Exception as e:
+        logger.error(f"Signup failed for FIN: {signup_details.fin_kod}, Error: {e}", exc_info=True)
         return JSONResponse(
             content={
                 "statusCode": 500,
-                "error": 500
-            }
+                "error": "Internal Server Error"
+            },
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
     
 async def signin(
     signin_details: SignIn,
@@ -77,7 +119,7 @@ async def signin(
 
         user = fetched_data.scalar_one_or_none()
 
-        if not user or not verify_password(signin_details.password, user.password_hash):
+        if not user or not verify_password(signin_details.password, user.password_hash) or not user.approved:
             return JSONResponse(
                 content={
                     "statusCode": 401,
