@@ -1,92 +1,124 @@
-from fastapi import FastAPI, jsonify
+from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 
-app = FastAPI()
+# Global 500 error
+async def handle_global_exception(request: Request, e: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Server Error",
+            "message": str(e),
+        },
+    )
 
-# global for 500 error
+# 404 - Not Found
+async def handle_not_found(request: Request, e: HTTPException):
+    return JSONResponse(
+        status_code=404,
+        content={
+            "status": 404,
+            "message": "User not found",
+            "error_code": "NOT_FOUND",
+        },
+    )
 
-@app.errorhandler(Exception)
-def handle_global_exception(e):
-    response = {
-        "error": "Internal Server Error",
-        "message": str(e)
-    }
-    return jsonify(response), 500
+# Custom 404 - Not Found with message (not an exception handler)
+def handle_specific_not_found(message: str):
+    return JSONResponse(
+        status_code=404,
+        content={
+            "status": 404,
+            "message": message,
+            "error_code": "NOT_FOUND",
+        },
+    )
 
-# 4xx
+# Custom 404 - Missing Field (not an exception handler)
+def handle_missing_field():
+    return JSONResponse(
+        status_code=404,
+        content={
+            "status": 404,
+            "message": "Missing field",
+            "error_code": "MISSING_FIELD",
+        },
+    )
 
-# handle not_found error
+# 409 - Conflict
+async def handle_conflict(request: Request, e: HTTPException):
+    return JSONResponse(
+        status_code=409,
+        content={
+            "status": 409,
+            "message": "User exists",
+            "error_code": "CONFLICT",
+        },
+    )
 
-@app.errorhandler(404)
-def handle_not_found(e):
-    return jsonify({"status" : 404, "message": "User not found", "error_code":  "NOT_FOUND"}), 404
+# 403 - Forbidden (Token missing)
+async def handle_forbidden(request: Request, e: HTTPException):
+    return JSONResponse(
+        status_code=403,
+        content={
+            "status": 403,
+            "message": "Token is missing.",
+            "error_code": "FORBIDDEN",
+        },
+    )
 
-@app.errorhandler(404)
-def handle_specific_not_found(e ,message):
-    return jsonify({"status": 404, "message" : message, "error_code" : "NOT_FOUND"})
+# 403 - Forbidden (Role-based, not an exception handler)
+def handle_role_forbidden(message: str):
+    return JSONResponse(
+        status_code=403,
+        content={
+            "status": 403,
+            "message": message,
+            "error_code": "FORBIDDEN",
+        },
+    )
 
-# handle missing_field error
-
-@app.errorhandler(404)
-def handle_missing_field(e):
-    return({"status": 404, "message": "Missing field", "error_code": "MISSING_FIELD"}), 404
-
-# handle conflict
-
-@app.errorhandler(409)
-def handle_conflict(e):
-    return jsonify({"status": 409, "message": "User exists", "error_code" : "CONFLICT"}), 409
-
-# handle token missing (forbidden) 403
-
-@app.errorhandler(403)
-def handle_forbidden(e):
-    return jsonify({"status": 403, "message" : "Token is missing.", "error_code" : "FORBIDDEN"}), 403
-
-# handle token role
-
-@app.errorhandler(403)
-def handle_role_forbidden(e, message):
-    return jsonify({"status": 403, "message": message, "error_code": "FORBIDDEN"})
-
-# handle unauthorized
-
+# 401 - Unauthorized
 def handle_unauthorized(status_code=401, message="Unauthorized"):
-    response = jsonify({
-        "error": "Unauthorized",
-        "message": message
-    })
-    response.status_code = status_code
-    return response
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "error": "Unauthorized",
+            "message": message,
+        },
+    )
 
-# OK - 2xx
-
-# handle sign-in success
-
+# 200 - Sign-in Success
 def handle_signin_success(data, message, token):
-    return jsonify({
-        "status": 200,
-        "message": message,
-        "data": data,
-        "token": token,
-        "success_code": "SUCCESS"
-    }), 200
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": 200,
+            "message": message,
+            "data": data,
+            "token": token,
+            "success_code": "SUCCESS",
+        },
+    )
 
-# handle success
-
+# 200 - General Success
 def handle_success(data, message):
-    return jsonify({
-        "status": 200,
-        "message": message,
-        "data" : data,
-        "success_code" : "SUCCESS"
-    })
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": 200,
+            "message": message,
+            "data": data,
+            "success_code": "SUCCESS",
+        },
+    )
 
-#handle creation
-
+# 201 - Creation
 def handle_creation(message):
-    return jsonify({
-        "status": 201,
-        "message": message,
-        "success_code": "CREATED"
-    }), 201
+    return JSONResponse(
+        status_code=201,
+        content={
+            "status": 201,
+            "message": message,
+            "success_code": "CREATED",
+        },
+    )

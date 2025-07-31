@@ -1,26 +1,19 @@
-from pydantic_settings import BaseSettings
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
+from fastapi import Depends
 
-load_dotenv()
+DATABASE_URL = "postgresql://neondb_owner:npg_r64CjIuEcTYy@ep-broad-salad-ae35mqgx-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
-class Settings(BaseSettings):
-    db_url: str  
-    secret_key: str
-
-    class Config:
-        env_file = ".env"
-
-settings = Settings()
-
-engine = create_engine(settings.db_url)
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 Base = declarative_base()
 
 def get_db():
-    db = SessionLocal()
+    core = SessionLocal()
     try:
-        yield db
+        yield core
     finally:
-        db.close()
+        core.close()

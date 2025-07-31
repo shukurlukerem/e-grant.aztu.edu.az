@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 from app.core.config import Base, engine
 from fastapi_cache import FastAPICache
-from app.core.rateLimiter import init_rate_limiter
 from fastapi import FastAPI, Request
 from app.core.log import logger
 
 from app.api.endpoints.v1.routes import expertRouter
 from app.api.endpoints.v1.routes.prioritetRouter import router as prioritet_router
 from app.api.endpoints.v1.routes.userRouter import router as user_router
+from app.api.endpoints.v1.routes.projectRouter import router as project_router
+from app.api.endpoints.v1.routes.expertRouter import router as expert_router
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI(
@@ -17,17 +18,18 @@ app = FastAPI(
 )
 
 
-app.include_router(prioritet_router.router, prefix="/api", tags=["Prioritet"])
-app.include_router(expertRouter.router, prefix= "/api", tags=["Experts"])
+app.include_router(prioritet_router, prefix="/api", tags=["Prioritet"])
+app.include_router(expert_router, prefix= "/api", tags=["Experts"])
 app.include_router(user_router, prefix="/api/profile", tags=["Profile"])
+app.include_router(project_router, prefix="/api", tags=["Projects"])
 
 @app.get("/test")
 def test():
     return {"message": "OK"}
 
-@app.on_event("startup")
-async def startup():
-    await init_rate_limiter()
+# @app.on_event("startup")
+# async def startup():
+#     await init_rate_limiter()
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

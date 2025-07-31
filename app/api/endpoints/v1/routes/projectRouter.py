@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.api.endpoints.v1.schemas import ProjectCreate, ProjectOut, ProjectUpdate
+from app.api.endpoints.v1.schemas.projectSchema import ProjectCreate, ProjectOut, ProjectUpdate
 from app.services.projectService import (
     
     create_or_update_project, get_all_projects,
@@ -10,7 +10,7 @@ from app.services.projectService import (
 from app.core.config import get_db
 from typing import List
 
-router = APIRouter(prefix="/api", tags=["Projects"])
+router = APIRouter()
 
 @router.post("/save/project", response_model=ProjectOut)
 def save_project(data: ProjectCreate, db: Session = Depends(get_db)):

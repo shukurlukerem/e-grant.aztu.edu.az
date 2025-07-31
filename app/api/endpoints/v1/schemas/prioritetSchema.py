@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 class PrioritetBase(BaseModel):
-    priority_name: str
+    prioritet_name: str
     project_code: int
 
 class PrioritetCreate(PrioritetBase):

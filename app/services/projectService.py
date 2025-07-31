@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from app.models.projectModel import Project
-from app.api.endpoints.v1.schemas import ProjectCreate, ProjectUpdate
+from app.api.endpoints.v1.schemas.projectSchema import ProjectCreate, ProjectUpdate
 from datetime import datetime
+from app.exceptions.exception import *   
 import random
 
 
@@ -41,11 +42,21 @@ def create_or_update_project(db: Session, data: ProjectCreate):
 def get_all_projects(db: Session):
     return db.query(Project).all()
 
+
 def get_project_by_code(db: Session, project_code: int):
     return db.query(Project).filter_by(project_code=project_code).first()
 
+
 def get_project_by_fin_kod(db: Session, fin_kod: str):
-    return db.query(Project).filter_by(fin_kod=fin_kod).first()
+    try:
+        project = db.query(Project).filter_by(fin_kod=fin_kod).first()
+        if not project:
+            return handle_specific_not_found("Project not found with the provided financial code.")
+        
+        return handle_success(project.project_detail(), "Project data fetched succesfully.")
+    except Exception as e:  
+        return handle_global_exception(str(e))
+
 
 def update_project(db: Session, data: ProjectUpdate):
     project = db.query(Project).filter_by(fin_kod=data.fin_kod).first()

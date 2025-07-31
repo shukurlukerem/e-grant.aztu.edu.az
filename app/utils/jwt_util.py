@@ -1,13 +1,14 @@
 import jwt
 import datetime
-from fastapi import current_app
-from models.userModel import User
-from fastapi import current_app, HTTPException
+import os
+from fastapi import HTTPException
 
-def encode_auth_token(user_id, fin_kod, profile_completed, role):
-    user = User.query.filter_by(fin_kod=fin_kod).first()
-    if not user:
-        raise ValueError("User not found")
+def encode_auth_token(user_id, fin_kod, profile_completed, role, secret_key=None):
+    # In FastAPI, user fetching should be done outside, so remove User.query here
+    if secret_key is None:
+        secret_key = os.getenv('SECRET_KEY')
+    if not secret_key or not isinstance(secret_key, str):
+        raise ValueError("SECRET_KEY is missing or not a valid string")
 
     expiration_time = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
     payload = {
@@ -17,25 +18,21 @@ def encode_auth_token(user_id, fin_kod, profile_completed, role):
         'role': role,
         'exp': expiration_time
     }
-    secret_key = current_app.config.get('SECRET_KEY')
-    if not secret_key or not isinstance(secret_key, str):
-        raise ValueError("SECRET_KEY is missing or not a valid string")
+
     token = jwt.encode(payload, secret_key, algorithm='HS256')
     if isinstance(token, bytes):
         token = token.decode('utf-8')
     return token
 
 
-def decode_auth_token(auth_token):
+def decode_auth_token(auth_token, secret_key=None):
     try:
-        current_app.logger.debug(f"Decoding token: {auth_token}")
-
-        secret_key = current_app.config.get('SECRET_KEY')
+        if secret_key is None:
+            secret_key = os.getenv('SECRET_KEY')
         if not secret_key or not isinstance(secret_key, str):
             raise ValueError("SECRET_KEY is missing or not a valid string")
-        payload = jwt.decode(auth_token, secret_key, algorithms=['HS256'], options={"require": ["exp"]})
 
-        current_app.logger.debug(f"Decoded payload: {payload}")
+        payload = jwt.decode(auth_token, secret_key, algorithms=['HS256'], options={"require": ["exp"]})
 
         return {
             'user_id': payload['sub'],
@@ -45,11 +42,8 @@ def decode_auth_token(auth_token):
         }
 
     except jwt.ExpiredSignatureError:
-        current_app.logger.warning("Token has expired")
         return None
-    except jwt.InvalidTokenError as e:
-        current_app.logger.warning(f"Invalid token: {e}")
+    except jwt.InvalidTokenError:
         return None
-    except Exception as e:
-        current_app.logger.error(f"Error decoding token: {e}")
+    except Exception:
         return None

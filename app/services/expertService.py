@@ -13,7 +13,6 @@ from app.exceptions.exception import (
 )
 from fastapi.templating import Jinja2Templates
 from app.utils.email_util import send_email
-from app.core.rateLimiter import RateLimiter
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates/email")

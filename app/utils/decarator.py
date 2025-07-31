@@ -1,15 +1,28 @@
 from functools import wraps
-from fastapi import request, jsonify, g
-from utils.jwt_util import decode_auth_token
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
+from app.utils.jwt_util import decode_auth_token
 from app.exceptions.exception import (handle_forbidden, 
-                                          handle_unauthorized,
-                                          handle_role_forbidden)
-
+                                      handle_unauthorized,
+                                      handle_role_forbidden)
 
 def role_required(required_roles):
     def decorator(f):
         @wraps(f)
-        def decorated_function(*args, **kwargs):
+        async def decorated_function(*args, **kwargs):
+            # We expect 'Request' to be passed as a keyword argument
+            request: Request = kwargs.get('request')
+            if request is None:
+                # Try to find Request in positional args (usually first)
+                for arg in args:
+                    if isinstance(arg, Request):
+                        request = arg
+                        break
+
+            if request is None:
+                # Could not find Request instance
+                return handle_unauthorized(403, "Request object is missing.")
+
             auth_header = request.headers.get('Authorization')
             if not auth_header:
                 return handle_unauthorized(403, 'Authorization token is missing.')
@@ -35,11 +48,12 @@ def role_required(required_roles):
                     print("Role check failed")
                     return handle_role_forbidden(403, "User does not have the required role to access this endpoint.")
 
-                g.user = payload
+                # Save user info in request.state for downstream use
+                request.state.user = payload
 
             except Exception as e:
                 return handle_unauthorized(401, f'Invalid token format: {str(e)}')
 
-            return f(*args, **kwargs)
+            return await f(*args, **kwargs)
         return decorated_function
     return decorator
